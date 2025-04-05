@@ -1,4 +1,3 @@
-import { useState } from "react";
 import ShipDisplay from "../components/ShipDisplay";
 import WeaponPanel from "../components/WeaponPanel";
 import CombatLog from "../components/CombatLog";
@@ -7,8 +6,15 @@ import BattleMap from "../components/BattleMap";
 import ShipStats from "../components/ShipStats";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-//import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-//import { Separator } from "../components/ui/separator";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import { 
+  selectShip, 
+  selectTarget, 
+  addLogEntry, 
+  attackTarget, 
+  endPlayerTurn, 
+  executeEnemyTurn 
+} from "../store/slices/gameSlice";
 
 export type Ship = {
   id: string;
@@ -175,40 +181,23 @@ export type LogEntry = {
 };
 
 const ShipCombat = () => {
-  const [playerShips, setPlayerShips] = useState<Ship[]>(mockPlayerShips);
-  const [enemyShips, setEnemyShips] = useState<Ship[]>(mockEnemyShips);
-  const [selectedShip, setSelectedShip] = useState<Ship | null>(mockPlayerShips[0]);
-  const [targetShip, setTargetShip] = useState<Ship | null>(null);
-  const [combatLogs, setCombatLogs] = useState<LogEntry[]>([
-    {
-      id: "1",
-      message: "Combat initiated with Klackon fleet",
-      timestamp: Date.now(),
-      type: "system",
-    },
-    {
-      id: "2",
-      message: "Your turn to attack",
-      timestamp: Date.now(),
-      type: "info",
-    },
-  ]);
-  const [currentTurn, setCurrentTurn] = useState<"player" | "enemy">("player");
-  const [phase, setPhase] = useState<"move" | "attack" | "end">("attack");
+  const dispatch = useAppDispatch();
+  const playerShips = useAppSelector((state) => state.game.playerShips);
+  const enemyShips = useAppSelector((state) => state.game.enemyShips);
+  const selectedShip = useAppSelector((state) => state.game.selectedShip);
+  const targetShip = useAppSelector((state) => state.game.targetShip);
+  const combatLogs = useAppSelector((state) => state.game.combatLogs);
+  const currentTurn = useAppSelector((state) => state.game.currentTurn);
+  const phase = useAppSelector((state) => state.game.phase);
 
   const handleShipSelect = (ship: Ship) => {
-    const updatedPlayerShips = playerShips.map((s) => ({
-      ...s,
-      selected: s.id === ship.id,
-    }));
-    setPlayerShips(updatedPlayerShips);
-    setSelectedShip(ship);
-    addLogEntry(`Selected ${ship.name} for combat actions`);
+    dispatch(selectShip(ship));
+    dispatch(addLogEntry({ message: `Selected ${ship.name} for combat actions` }));
   };
 
   const handleTargetSelect = (ship: Ship) => {
-    setTargetShip(ship);
-    addLogEntry(`Targeting enemy vessel ${ship.name}`);
+    dispatch(selectTarget(ship));
+    dispatch(addLogEntry({ message: `Targeting enemy vessel ${ship.name}` }));
   };
 
   const handleAttack = (weaponId: string) => {
@@ -217,207 +206,68 @@ const ShipCombat = () => {
     const weapon = selectedShip.weapons.find((w) => w.id === weaponId);
     if (!weapon) return;
 
-    // Simulate attack
-    const hitRoll = Math.random() * 100;
-    const hit = hitRoll <= weapon.accuracy;
+    dispatch(attackTarget(weaponId));
+    
+    // Add log entries
+    dispatch(addLogEntry({ 
+      message: `${selectedShip.name} fires ${weapon.name} at ${targetShip.name} for ${weapon.damage} damage!` 
+    }));
 
-    if (hit) {
-      // Calculate damage
-      const damage = weapon.damage;
-      const updatedEnemyShips = enemyShips.map((ship) => {
-        if (ship.id === targetShip.id) {
-          // Apply damage to shields first, then hull
-          let remainingDamage = damage;
-          let newShields = ship.shields;
-          
-          if (newShields > 0) {
-            if (remainingDamage > newShields) {
-              remainingDamage -= newShields;
-              newShields = 0;
-            } else {
-              newShields -= remainingDamage;
-              remainingDamage = 0;
-            }
-          }
-          
-          const newHull = Math.max(0, ship.hull - remainingDamage);
-          const destroyed = newHull <= 0;
-          
-          return {
-            ...ship,
-            shields: newShields,
-            hull: newHull,
-            destroyed,
-          };
-        }
-        return ship;
-      });
-
-      setEnemyShips(updatedEnemyShips);
-      addLogEntry(
-        `${selectedShip.name} fires ${weapon.name} at ${targetShip.name} for ${damage} damage!`
-      );
-
-      if (targetShip.shields > 0) {
-        addLogEntry(
-          `${targetShip.name}'s shields absorb part of the damage.`
-        );
-      }
-
-      const updatedTarget = updatedEnemyShips.find(
-        (ship) => ship.id === targetShip.id
-      );
-      if (updatedTarget?.destroyed) {
-        addLogEntry(`${targetShip.name} has been destroyed!`);
-      }
-    } else {
-      addLogEntry(
-        `${selectedShip.name} fires ${weapon.name} at ${targetShip.name} but misses!`
-      );
+    if (targetShip.shields > 0) {
+      dispatch(addLogEntry({ 
+        message: `${targetShip.name}'s shields absorb part of the damage.` 
+      }));
     }
 
-    // Update weapon cooldown
-    const updatedPlayerShips = playerShips.map((ship) => {
-      if (ship.id === selectedShip.id) {
-        const updatedWeapons = ship.weapons.map((w) =>
-          w.id === weaponId
-            ? { ...w, currentCooldown: w.cooldown }
-            : w
-        );
-        return { ...ship, weapons: updatedWeapons };
-      }
-      return ship;
-    });
-
-    setPlayerShips(updatedPlayerShips);
+    const updatedTarget = enemyShips.find((ship) => ship.id === targetShip.id);
+    if (updatedTarget?.destroyed) {
+      dispatch(addLogEntry({ 
+        message: `${targetShip.name} has been destroyed!` 
+      }));
+    }
 
     // End player turn after attack
     setTimeout(() => {
-      setCurrentTurn("enemy");
-      setPhase("attack");
-      executeEnemyTurn();
+      dispatch(endPlayerTurn());
+      executeEnemyTurnAction();
     }, 1500);
   };
 
-  const executeEnemyTurn = () => {
-    // Simulate enemy attack
-    addLogEntry("Enemy fleet is preparing to attack...");
+  const executeEnemyTurnAction = () => {
+    // Log enemy attack
+    dispatch(addLogEntry({ message: "Enemy fleet is preparing to attack..." }));
 
     setTimeout(() => {
+      dispatch(executeEnemyTurn());
+      
       const activeEnemies = enemyShips.filter((ship) => !ship.destroyed);
       if (activeEnemies.length === 0) {
-        addLogEntry("Victory! All enemy ships have been destroyed.");
+        dispatch(addLogEntry({ 
+          message: "Victory! All enemy ships have been destroyed.",
+          type: "system" 
+        }));
         return;
       }
 
       const activePlayerShips = playerShips.filter((ship) => !ship.destroyed);
       if (activePlayerShips.length === 0) {
-        addLogEntry("Defeat! All your ships have been destroyed.");
+        dispatch(addLogEntry({ 
+          message: "Defeat! All your ships have been destroyed.",
+          type: "system" 
+        }));
         return;
       }
-
-      // Enemy selects a random player ship to attack
-      const randomPlayerShip =
-        activePlayerShips[Math.floor(Math.random() * activePlayerShips.length)];
-
-      // Enemy selects a random ship to attack with
-      const randomEnemyShip =
-        activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
-
-      const enemyWeapon = randomEnemyShip.weapons[0]; // Assuming each enemy has at least one weapon
-      const hitRoll = Math.random() * 100;
-      const hit = hitRoll <= enemyWeapon.accuracy;
-
-      if (hit) {
-        // Calculate damage
-        const damage = enemyWeapon.damage;
-        const updatedPlayerShips = playerShips.map((ship) => {
-          if (ship.id === randomPlayerShip.id) {
-            // Apply damage to shields first, then hull
-            let remainingDamage = damage;
-            let newShields = ship.shields;
-            
-            if (newShields > 0) {
-              if (remainingDamage > newShields) {
-                remainingDamage -= newShields;
-                newShields = 0;
-              } else {
-                newShields -= remainingDamage;
-                remainingDamage = 0;
-              }
-            }
-            
-            const newHull = Math.max(0, ship.hull - remainingDamage);
-            const destroyed = newHull <= 0;
-            
-            return {
-              ...ship,
-              shields: newShields,
-              hull: newHull,
-              destroyed,
-            };
-          }
-          return ship;
-        });
-
-        setPlayerShips(updatedPlayerShips);
-        addLogEntry(
-          `${randomEnemyShip.name} fires ${enemyWeapon.name} at ${randomPlayerShip.name} for ${damage} damage!`
-        );
-
-        if (randomPlayerShip.shields > 0) {
-          addLogEntry(
-            `${randomPlayerShip.name}'s shields absorb part of the damage.`
-          );
-        }
-
-        const updatedTarget = updatedPlayerShips.find(
-          (ship) => ship.id === randomPlayerShip.id
-        );
-        if (updatedTarget?.destroyed) {
-          addLogEntry(`${randomPlayerShip.name} has been destroyed!`);
-        }
-      } else {
-        addLogEntry(
-          `${randomEnemyShip.name} fires ${enemyWeapon.name} at ${randomPlayerShip.name} but misses!`
-        );
-      }
-
-      // End enemy turn
+      
+      // Add log for player turn
       setTimeout(() => {
-        setCurrentTurn("player");
-        setPhase("attack");
-        
-        // Reduce cooldowns for player weapons
-        const updatedPlayerShips = playerShips.map((ship) => {
-          const updatedWeapons = ship.weapons.map((w) => ({
-            ...w,
-            currentCooldown: Math.max(0, w.currentCooldown - 1),
-          }));
-          return { ...ship, weapons: updatedWeapons };
-        });
-        setPlayerShips(updatedPlayerShips);
-
-        addLogEntry("Your turn to attack");
+        dispatch(addLogEntry({ message: "Your turn to attack" }));
       }, 1500);
     }, 1500);
   };
 
-  const addLogEntry = (message: string, type: LogEntry["type"] = "info") => {
-    setCombatLogs((prevLogs) => [
-      {
-        id: Date.now().toString(),
-        message,
-        timestamp: Date.now(),
-        type,
-      },
-      ...prevLogs,
-    ]);
-  };
-
   const handleEndTurn = () => {
-    setCurrentTurn("enemy");
-    executeEnemyTurn();
+    dispatch(endPlayerTurn());
+    executeEnemyTurnAction();
   };
 
   return (

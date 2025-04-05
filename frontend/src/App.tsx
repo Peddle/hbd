@@ -1,4 +1,5 @@
 import ShipCombat from "./pages/ShipCombat"
+import ReduxTest from "./components/ReduxTest"
 
 function App() {
   return (
@@ -9,6 +10,9 @@ function App() {
         </h1>
       </header>
       <main>
+        <div className="container mx-auto py-4">
+          <ReduxTest />
+        </div>
         <ShipCombat />
       </main>
     </div>
