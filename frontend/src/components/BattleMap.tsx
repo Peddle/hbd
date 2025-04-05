@@ -8,7 +8,7 @@ const DEBUG = false;
 
 const BattleMap = () => {
   const dispatch = useDispatch();
-  const {selectShip, selectTarget, moveShip} = gameSlice.actions;
+  const {selectShip, selectTarget, moveShip, rotateShip} = gameSlice.actions;
 
   const gridWidth = 30;
   const gridHeight = 30;
@@ -101,20 +101,55 @@ const BattleMap = () => {
       const dx = gridX - selectedShip.position.x;
       const dy = gridY - selectedShip.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance <= selectedShip.speedRemaining) {
+
+      const angleRad = Math.atan2(dx, dy);
+      let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+      angleDeg = Math.round(angleDeg / 90) * 90;
+
+      const currentFacing = selectedShip.facing ?? 0;
+      const rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
+      const rotationCost = (rotationDiff / 90) * 1;
+
+      const totalCost = distance + rotationCost;
+
+      if (totalCost <= selectedShip.speedRemaining) {
+        if (rotationCost > 0) {
+          dispatch(rotateShip({ship: selectedShip, angle: angleDeg, cost: rotationCost}));
+        }
         dispatch(moveShip({ship: selectedShip, newPos: [gridX, gridY], cost: distance}));
       }
     }
+  };
+
+  const drawShipSprite = (ctx, x: number, y: number, size: number, color, facing = 0) => {
+    const cx = x + size / 2;
+    const cy = y + size / 2;
+    const radius = size / 3;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((facing * Math.PI) / 180);
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -radius);
+    ctx.stroke();
+
+    ctx.restore();
   };
 
   const drawShips = (ctx, ships, color) => {
     ships.forEach((ship) => {
       const x = (ship.position.x + Math.floor(gridWidth / 2)) * squareSize - offsetX;
       const y = (ship.position.y + Math.floor(gridHeight / 2)) * squareSize - offsetY;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x + squareSize / 2, y + squareSize / 2, squareSize / 3, 0, Math.PI * 2);
-      ctx.fill();
+      drawShipSprite(ctx, x, y, squareSize, color, ship.facing);
     });
   };
 
@@ -175,11 +210,11 @@ const BattleMap = () => {
         const mapY = y - Math.floor(gridHeight / 2);
 
         if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
-          ctx.fillStyle = "#0005";
-          ctx.strokeStyle = "#333";
+          ctx.fillStyle = "#eee";
+          ctx.strokeStyle = "#ccc";
         } else {
-          ctx.fillStyle = "#4443";
-          ctx.strokeStyle = "#FFF2";
+          ctx.fillStyle = "#222";
+          ctx.strokeStyle = "#444";
         }
 
         ctx.fillRect(px, py, squareSize, squareSize);
@@ -210,10 +245,10 @@ const BattleMap = () => {
   }, [offsetX, offsetY, canvasSize, playerShips, enemyShips, selectedShip, hoverTile]);
 
   return (
-    <div className="h-full">
+    <div>
       <div
         ref={containerRef}
-        className="h-full w-full"
+        style={{width: "100%", height: "500px"}}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -221,7 +256,7 @@ const BattleMap = () => {
       >
         <canvas
           ref={canvasRef}
-          style={{width: "100%", height: "100%", display: "block", backgroundColor: "transparent"}}
+          style={{width: "100%", height: "100%", display: "block", backgroundColor: "#111"}}
         />
       </div>
     </div>

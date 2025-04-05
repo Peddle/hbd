@@ -26,6 +26,7 @@ export type Ship = {
   image: string;
   faction: string;
   position: { x: number; y: number };
+  facing: number;
   speed: number;
   speedRemaining: number;
   selected: boolean;
@@ -77,6 +78,7 @@ export const mockPlayerShips: Ship[] = [
     image: "/ships/player_destroyer.png",
     faction: "Human",
     position: { x: -2, y: -3 },
+    facing: 0,
     speed: 5,
     speedRemaining: 5,
     selected: true,
@@ -115,6 +117,7 @@ export const mockPlayerShips: Ship[] = [
     image: "/ships/player_cruiser.png",
     faction: "Human",
     position: { x: -1, y: 4 },
+    facing: 0,
     speed: 4,
     speedRemaining: 2,
     selected: false,
@@ -146,6 +149,7 @@ export const mockEnemyShips: Ship[] = [
     image: "/ships/enemy_destroyer.png",
     faction: "Klackon",
     position: { x: 4, y: -3 },
+    facing: 180,
     speed: 5,
     speedRemaining: 5,
     selected: false,
@@ -174,6 +178,7 @@ export const mockEnemyShips: Ship[] = [
     image: "/ships/enemy_battleship.png",
     faction: "Klackon",
     position: { x: 4, y: 1 },
+    facing: 180,
     speed: 5,
     speedRemaining: 5,
     selected: false,

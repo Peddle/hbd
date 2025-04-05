@@ -61,6 +61,16 @@ export const gameSlice = createSlice({
       };
       state.playerShips[shipIndex] = updatedShip;
     },
+    rotateShip: (state, action: PayloadAction<{ship: Ship, angle: number, cost: number}>) => {
+      const {ship, angle, cost} = action.payload;
+      const shipIndex = state.playerShips.findIndex((s) => s.id === ship.id);
+      const updatedShip = {
+        ...state.playerShips[shipIndex],
+        facing: angle % 360,
+        speedRemaining: state.playerShips[shipIndex].speedRemaining - cost,
+      };
+      state.playerShips[shipIndex] = updatedShip;
+    },
     addLogEntry: (
       state,
       action: PayloadAction<{message: string; type?: LogEntry['type']}>
