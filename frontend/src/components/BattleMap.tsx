@@ -124,8 +124,11 @@ const BattleMap = () => {
     const shipX = selectedShip.position.x;
     const shipY = selectedShip.position.y;
 
-    for (let y = -radius; y <= radius; y++) {
-      for (let x = -radius; x <= radius; x++) {
+    const min = Math.floor(-radius);
+    const max = Math.ceil(radius);
+
+    for (let y = min; y <= max; y++) {
+      for (let x = min; x <= max; x++) {
         const dist = Math.sqrt(x * x + y * y);
         if (dist <= radius) {
           const gridX = shipX + x;
