@@ -103,9 +103,9 @@ const BattleMap = () => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button == 0) {
-      setIsDragging(true);
+      setLastMousePos({x: e.clientX, y: e.clientY});
+      //setIsDragging(true);
     }
-    setLastMousePos({x: e.clientX, y: e.clientY});
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -153,17 +153,22 @@ const BattleMap = () => {
     const gridY = Math.floor(y / squareSize) - Math.floor(gridHeight / 2);
     setHoverTile([gridX, gridY]);
 
-    if (isDragging) {
-      const dx = e.clientX - lastMousePos.x;
-      const dy = e.clientY - lastMousePos.y;
-      setOffsetX(prev => prev - dx * scale);
-      setOffsetY(prev => prev - dy * scale);
-      setLastMousePos({x: e.clientX, y: e.clientY});
-    }
-  };
-
+    if (e.buttons === 1) {
+      if (e.clientX !== lastMousePos.x || e.clientY !== lastMousePos.y) {
+        setIsDragging(true);
+      }
+      if (isDragging) {
+        const dx = e.clientX - lastMousePos.x;
+        const dy = e.clientY - lastMousePos.y;
+        setOffsetX(prev => prev - dx * scale);
+        setOffsetY(prev => prev - dy * scale);
+        setLastMousePos({x: e.clientX, y: e.clientY});
+      }
+    };
+  }
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(false);
+    if (isDragging) {return;} //no triggers if dragging
     if (e.button !== 0) return; //left mouse handler
 
     if (!canvasRef.current) return;
@@ -210,6 +215,7 @@ const BattleMap = () => {
       }
     }
   };
+
 
   const handleRightClick = (e: React.MouseEvent) => {
     e.preventDefault();
