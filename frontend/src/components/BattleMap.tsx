@@ -175,11 +175,11 @@ const BattleMap = () => {
         const mapY = y - Math.floor(gridHeight / 2);
 
         if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
-          ctx.fillStyle = "#eee";
-          ctx.strokeStyle = "#ccc";
+          ctx.fillStyle = "#0005";
+          ctx.strokeStyle = "#333";
         } else {
-          ctx.fillStyle = "#222";
-          ctx.strokeStyle = "#444";
+          ctx.fillStyle = "#4443";
+          ctx.strokeStyle = "#FFF2";
         }
 
         ctx.fillRect(px, py, squareSize, squareSize);
@@ -221,7 +221,7 @@ const BattleMap = () => {
       >
         <canvas
           ref={canvasRef}
-          style={{width: "100%", height: "100%", display: "block", backgroundColor: "#111"}}
+          style={{width: "100%", height: "100%", display: "block", backgroundColor: "transparent"}}
         />
       </div>
     </div>
