@@ -27,6 +27,8 @@ export type Ship = {
   image: string;
   faction: string;
   position: { x: number; y: number };
+  speed: number;
+  speedRemaining: number;
   selected: boolean;
   targetable: boolean;
   destroyed: boolean;
@@ -76,6 +78,8 @@ export const mockPlayerShips: Ship[] = [
     image: "/ships/player_destroyer.png",
     faction: "Human",
     position: { x: -2, y: -3 },
+    speed: 5,
+    speedRemaining: 5,
     selected: true,
     targetable: false,
     destroyed: false,
@@ -112,6 +116,8 @@ export const mockPlayerShips: Ship[] = [
     image: "/ships/player_cruiser.png",
     faction: "Human",
     position: { x: -1, y: 4 },
+    speed: 4,
+    speedRemaining: 2,
     selected: false,
     targetable: false,
     destroyed: false,
@@ -141,6 +147,8 @@ export const mockEnemyShips: Ship[] = [
     image: "/ships/enemy_destroyer.png",
     faction: "Klackon",
     position: { x: 4, y: -3 },
+    speed: 5,
+    speedRemaining: 5,
     selected: false,
     targetable: true,
     destroyed: false,
@@ -167,6 +175,8 @@ export const mockEnemyShips: Ship[] = [
     image: "/ships/enemy_battleship.png",
     faction: "Klackon",
     position: { x: 4, y: 1 },
+    speed: 5,
+    speedRemaining: 5,
     selected: false,
     targetable: true,
     destroyed: false,
@@ -266,6 +276,7 @@ const ShipCombat = () => {
   };
 
   const handleEndTurn = () => {
+    for (const ship of playerShips) { ship.speedRemaining = ship.speed; }
     dispatch(endPlayerTurn());
     executeEnemyTurnAction();
   };

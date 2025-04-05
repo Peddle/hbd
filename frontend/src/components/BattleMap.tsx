@@ -1,24 +1,23 @@
 import {useRef, useState, useEffect} from "react";
+import {useSelector, useDispatch} from "react-redux";
+import {gameSlice} from "@/store/slices/gameSlice";
 import {Ship} from "../pages/ShipCombat";
+
 
 const DEBUG = false;
 
-interface BattleMapProps {
-  playerShips: Ship[];
-  enemyShips: Ship[];
-  selectedShip: Ship | null;
-  targetShip: Ship | null;
-}
+const BattleMap = () => {
+  const dispatch = useDispatch();
+  const {selectShip, selectTarget, moveShip} = gameSlice.actions;
 
+  const gridWidth = 30;
+  const gridHeight = 30;
+  const squareSize = 25;
 
-
-const BattleMap = ({
-  playerShips,
-  enemyShips,
-}: BattleMapProps) => {
-  const gridWidth = 30; // number of columns
-  const gridHeight = 30; // number of rows
-  const squareSize = 25; // pixel size of each square
+  const playerShips: Ship[] = useSelector((state: any) => state.game.playerShips);
+  const enemyShips: Ship[] = useSelector((state: any) => state.game.enemyShips);
+  const selectedShip: Ship | null = useSelector((state: any) => state.game.selectedShip);
+  const targetShip: Ship | null = useSelector((state: any) => state.game.targetShip);
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -27,6 +26,7 @@ const BattleMap = ({
   const [offsetY, setOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({x: 0, y: 0});
+  const [hoverTile, setHoverTile] = useState<[number, number] | null>(null);
 
   const mapCenterX = Math.floor(gridWidth / 2) * squareSize;
   const mapCenterY = Math.floor(gridHeight / 2) * squareSize;
@@ -51,6 +51,14 @@ const BattleMap = ({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
+    const rect = (canvasRef.current as HTMLCanvasElement).getBoundingClientRect();
+    const x = e.clientX - rect.left + offsetX;
+    const y = e.clientY - rect.top + offsetY;
+
+    const gridX = Math.floor(x / squareSize) - Math.floor(gridWidth / 2);
+    const gridY = Math.floor(y / squareSize) - Math.floor(gridHeight / 2);
+    setHoverTile([gridX, gridY]);
+
     if (isDragging) {
       const dx = e.clientX - lastMousePos.x;
       const dy = e.clientY - lastMousePos.y;
@@ -60,8 +68,42 @@ const BattleMap = ({
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(false);
+
+    const rect = (canvasRef.current as HTMLCanvasElement).getBoundingClientRect();
+    const x = e.clientX - rect.left + offsetX;
+    const y = e.clientY - rect.top + offsetY;
+
+    const gridX = Math.floor(x / squareSize) - Math.floor(gridWidth / 2);
+    const gridY = Math.floor(y / squareSize) - Math.floor(gridHeight / 2);
+
+    const clickedPlayer = playerShips.find(
+      (ship) => ship.position.x === gridX && ship.position.y === gridY
+    );
+
+    if (clickedPlayer) {
+      dispatch(selectShip(clickedPlayer));
+      return;
+    }
+
+    const clickedEnemy = enemyShips.find(
+      (ship) => ship.position.x === gridX && ship.position.y === gridY
+    );
+
+    if (clickedEnemy) {
+      dispatch(selectTarget(clickedEnemy));
+      return;
+    }
+
+    if (selectedShip && selectedShip.speedRemaining != null) {
+      const dx = gridX - selectedShip.position.x;
+      const dy = gridY - selectedShip.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance <= selectedShip.speedRemaining) {
+        dispatch(moveShip({ship: selectedShip, newPos: [gridX, gridY], cost: distance}));
+      }
+    }
   };
 
   const drawShips = (ctx, ships, color) => {
@@ -73,6 +115,44 @@ const BattleMap = ({
       ctx.arc(x + squareSize / 2, y + squareSize / 2, squareSize / 3, 0, Math.PI * 2);
       ctx.fill();
     });
+  };
+
+  const drawMovementRange = (ctx) => {
+    if (!selectedShip || selectedShip.speedRemaining == null) return;
+    const radius = selectedShip.speedRemaining;
+    const shipX = selectedShip.position.x;
+    const shipY = selectedShip.position.y;
+
+    for (let y = -radius; y <= radius; y++) {
+      for (let x = -radius; x <= radius; x++) {
+        const dist = Math.sqrt(x * x + y * y);
+        if (dist <= radius) {
+          const gridX = shipX + x;
+          const gridY = shipY + y;
+          const px = (gridX + Math.floor(gridWidth / 2)) * squareSize - offsetX;
+          const py = (gridY + Math.floor(gridHeight / 2)) * squareSize - offsetY;
+
+          ctx.fillStyle = "rgba(0, 255, 255, 0.2)";
+          ctx.fillRect(px, py, squareSize, squareSize);
+        }
+      }
+    }
+  };
+
+  const drawHoverTile = (ctx) => {
+    if (!selectedShip || selectedShip.speedRemaining == null || !hoverTile) return;
+    const [hx, hy] = hoverTile;
+    const dx = hx - selectedShip.position.x;
+    const dy = hy - selectedShip.position.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= selectedShip.speedRemaining) {
+      const px = (hx + Math.floor(gridWidth / 2)) * squareSize - offsetX;
+      const py = (hy + Math.floor(gridHeight / 2)) * squareSize - offsetY;
+      ctx.strokeStyle = "cyan";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, squareSize, squareSize);
+    }
   };
 
   const drawGrid = (ctx) => {
@@ -109,6 +189,8 @@ const BattleMap = ({
       }
     }
 
+    drawMovementRange(ctx);
+    drawHoverTile(ctx);
     drawShips(ctx, playerShips, "#0f0");
     drawShips(ctx, enemyShips, "#f00");
   };
@@ -121,7 +203,7 @@ const BattleMap = ({
       const ctx = canvas.getContext("2d");
       drawGrid(ctx);
     }
-  }, [offsetX, offsetY, canvasSize, playerShips, enemyShips]);
+  }, [offsetX, offsetY, canvasSize, playerShips, enemyShips, selectedShip, hoverTile]);
 
   return (
     <div>
@@ -143,4 +225,3 @@ const BattleMap = ({
 };
 
 export default BattleMap;
-
