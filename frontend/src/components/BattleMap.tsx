@@ -274,7 +274,7 @@ const BattleMap = () => {
     if (isEnemy) {
       ctx.strokeStyle = "red";
       ctx.lineWidth = 2;
-      ctx.strokeRect(px, py, squareSize, squareSize);
+      ctx.strokeRect(px, py, scaledSquareSize, scaledSquareSize);
       return;
     }
 
