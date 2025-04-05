@@ -1,11 +1,13 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Ship, Weapon, LogEntry, mockPlayerShips, mockEnemyShips} from '../../pages/ShipCombat';
 
+export type ShipIndex = number
+
 interface GameState {
   playerShips: Ship[];
   enemyShips: Ship[];
-  selectedShip: Ship | null;
-  targetShip: Ship | null;
+  selectedShip: ShipIndex | null;
+  targetShip: ShipIndex | null;
   combatLogs: LogEntry[];
   currentTurn: 'player' | 'enemy';
   phase: 'move' | 'attack' | 'end';
@@ -14,7 +16,7 @@ interface GameState {
 const initialState: GameState = {
   playerShips: mockPlayerShips,
   enemyShips: mockEnemyShips,
-  selectedShip: mockPlayerShips[0],
+  selectedShip: 0,
   targetShip: null,
   combatLogs: [
     {
@@ -38,15 +40,15 @@ export const gameSlice = createSlice({
   name: 'game',
   initialState,
   reducers: {
-    selectShip: (state, action: PayloadAction<Ship>) => {
+    selectShip: (state, action: PayloadAction<ShipIndex>) => {
       const ship = action.payload;
-      state.playerShips = state.playerShips.map((s) => ({
+      state.playerShips = state.playerShips.map((s, i) => ({
         ...s,
-        selected: s.id === ship.id,
+        selected: i == ship,
       }));
       state.selectedShip = ship;
     },
-    selectTarget: (state, action: PayloadAction<Ship>) => {
+    selectTarget: (state, action: PayloadAction<ShipIndex>) => {
       state.targetShip = action.payload;
     },
     moveShip: (state, action: PayloadAction<{ship: Ship, newPos: [number, number], cost: number}>) => {
@@ -79,7 +81,7 @@ export const gameSlice = createSlice({
       const weaponId = action.payload;
       if (!state.selectedShip || !state.targetShip) return;
 
-      const weapon = state.selectedShip.weapons.find((w) => w.id === weaponId);
+      const weapon = state.playerShips[state.selectedShip].weapons.find((w) => w.id === weaponId);
       if (!weapon) return;
 
       // Simulate attack
@@ -91,12 +93,9 @@ export const gameSlice = createSlice({
         const damage = weapon.damage;
 
         // Apply damage to target
-        const targetIndex = state.enemyShips.findIndex(
-          (ship) => ship.id === state.targetShip?.id
-        );
 
-        if (targetIndex !== -1) {
-          let ship = state.enemyShips[targetIndex];
+        if (state.targetShip > -1) {
+          let ship = state.enemyShips[state.targetShip];
 
           // Apply damage to shields first, then hull
           let remainingDamage = damage;
@@ -116,7 +115,7 @@ export const gameSlice = createSlice({
           const destroyed = newHull <= 0;
 
           // Update the ship
-          state.enemyShips[targetIndex] = {
+          state.enemyShips[state.targetShip] = {
             ...ship,
             shields: newShields,
             hull: newHull,
@@ -126,17 +125,14 @@ export const gameSlice = createSlice({
       }
 
       // Update weapon cooldown
-      state.playerShips = state.playerShips.map((ship) => {
-        if (ship.id === state.selectedShip?.id) {
-          const updatedWeapons = ship.weapons.map((w) =>
-            w.id === weaponId
-              ? {...w, currentCooldown: w.cooldown}
-              : w
-          );
-          return {...ship, weapons: updatedWeapons};
-        }
-        return ship;
-      });
+      const updatedWeapons = state.playerShips[state.selectedShip].weapons.map((w) =>
+        w.id === weaponId
+          ? {...w, currentCooldown: w.cooldown}
+          : w
+      );
+      const updatedShip = {...state.playerShips[state.selectedShip], weapons: updatedWeapons};
+
+      state.playerShips = [...state.playerShips, updatedShip];
     },
 
     endPlayerTurn: (state) => {

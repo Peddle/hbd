@@ -16,8 +16,11 @@ const BattleMap = () => {
 
   const playerShips: Ship[] = useSelector((state: any) => state.game.playerShips);
   const enemyShips: Ship[] = useSelector((state: any) => state.game.enemyShips);
-  const selectedShip: Ship | null = useSelector((state: any) => state.game.selectedShip);
-  const targetShip: Ship | null = useSelector((state: any) => state.game.targetShip);
+  const selectedShipIndex: number | null = useSelector((state: any) => state.game.selectedShip);
+  const targetShipIndex: number | null = useSelector((state: any) => state.game.targetShip);
+
+  const selectedShip = selectedShipIndex != null ? playerShips[selectedShipIndex] : null;
+  const targetShip = targetShipIndex != null ? enemyShips[targetShipIndex] : null;
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -78,21 +81,19 @@ const BattleMap = () => {
     const gridX = Math.floor(x / squareSize) - Math.floor(gridWidth / 2);
     const gridY = Math.floor(y / squareSize) - Math.floor(gridHeight / 2);
 
-    const clickedPlayer = playerShips.find(
+    const clickedPlayerIndex = playerShips.findIndex(
       (ship) => ship.position.x === gridX && ship.position.y === gridY
     );
-
-    if (clickedPlayer) {
-      dispatch(selectShip(clickedPlayer));
+    if (clickedPlayerIndex !== -1) {
+      dispatch(selectShip(clickedPlayerIndex));
       return;
     }
 
-    const clickedEnemy = enemyShips.find(
+    const clickedEnemyIndex = enemyShips.findIndex(
       (ship) => ship.position.x === gridX && ship.position.y === gridY
     );
-
-    if (clickedEnemy) {
-      dispatch(selectTarget(clickedEnemy));
+    if (clickedEnemyIndex !== -1) {
+      dispatch(selectTarget(clickedEnemyIndex));
       return;
     }
 

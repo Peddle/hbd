@@ -16,6 +16,7 @@ import {
   executeEnemyTurn 
 } from "../store/slices/gameSlice";
 
+
 export type Ship = {
   id: string;
   name: string;
@@ -200,39 +201,39 @@ const ShipCombat = () => {
   const currentTurn = useAppSelector((state) => state.game.currentTurn);
   const phase = useAppSelector((state) => state.game.phase);
 
-  const handleShipSelect = (ship: Ship) => {
+  const handleShipSelect = (ship: number) => {
     dispatch(selectShip(ship));
-    dispatch(addLogEntry({ message: `Selected ${ship.name} for combat actions` }));
+    dispatch(addLogEntry({ message: `Selected ${playerShips[ship].name} for combat actions` }));
   };
 
-  const handleTargetSelect = (ship: Ship) => {
+  const handleTargetSelect = (ship: number) => {
     dispatch(selectTarget(ship));
-    dispatch(addLogEntry({ message: `Targeting enemy vessel ${ship.name}` }));
+    dispatch(addLogEntry({ message: `Targeting enemy vessel ${enemyShips[ship].name}` }));
   };
 
   const handleAttack = (weaponId: string) => {
     if (!selectedShip || !targetShip) return;
 
-    const weapon = selectedShip.weapons.find((w) => w.id === weaponId);
+    const weapon = playerShips[selectedShip].weapons.find((w) => w.id === weaponId);
     if (!weapon) return;
 
     dispatch(attackTarget(weaponId));
     
     // Add log entries
     dispatch(addLogEntry({ 
-      message: `${selectedShip.name} fires ${weapon.name} at ${targetShip.name} for ${weapon.damage} damage!` 
+      message: `${playerShips[selectedShip].name} fires ${weapon.name} at ${targetShip.name} for ${weapon.damage} damage!` 
     }));
 
-    if (targetShip.shields > 0) {
+    if (enemyShips[targetShip].shields > 0) {
       dispatch(addLogEntry({ 
-        message: `${targetShip.name}'s shields absorb part of the damage.` 
+        message: `${enemyShips[targetShip].name}'s shields absorb part of the damage.` 
       }));
     }
 
-    const updatedTarget = enemyShips.find((ship) => ship.id === targetShip.id);
+    const updatedTarget = enemyShips[targetShip];
     if (updatedTarget?.destroyed) {
       dispatch(addLogEntry({ 
-        message: `${targetShip.name} has been destroyed!` 
+        message: `${updatedTarget.name} has been destroyed!` 
       }));
     }
 
@@ -276,7 +277,6 @@ const ShipCombat = () => {
   };
 
   const handleEndTurn = () => {
-    for (const ship of playerShips) { ship.speedRemaining = ship.speed; }
     dispatch(endPlayerTurn());
     executeEnemyTurnAction();
   };
@@ -324,7 +324,7 @@ const ShipCombat = () => {
                     key={ship.id} 
                     ship={ship} 
                     onSelect={() => handleShipSelect(ship)}
-                    isActive={selectedShip?.id === ship.id}
+                    isActive={playerShips[selectedShip]?.id === ship.id}
                   />
                 ))}
               </div>
@@ -337,7 +337,7 @@ const ShipCombat = () => {
                 <CardTitle>Ship Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <ShipStats ship={selectedShip} />
+                <ShipStats ship={playerShips[selectedShip]} />
               </CardContent>
             </Card>
           )}
@@ -350,12 +350,7 @@ const ShipCombat = () => {
               <CardTitle>Battle Map</CardTitle>
             </CardHeader>
             <CardContent>
-              <BattleMap 
-                playerShips={playerShips} 
-                enemyShips={enemyShips}
-                selectedShip={selectedShip}
-                targetShip={targetShip}
-              />
+              <BattleMap />
             </CardContent>
           </Card>
 
@@ -366,7 +361,7 @@ const ShipCombat = () => {
               </CardHeader>
               <CardContent>
                 <WeaponPanel 
-                  weapons={selectedShip.weapons} 
+                  weapons={playerShips[selectedShip].weapons} 
                   onFireWeapon={handleAttack}
                   disabled={currentTurn !== "player" || !targetShip}
                 />
@@ -388,7 +383,7 @@ const ShipCombat = () => {
                     key={ship.id}
                     ship={ship}
                     onSelect={() => handleTargetSelect(ship)}
-                    isSelected={targetShip?.id === ship.id}
+                    isSelected={targetShip && enemyShips[targetShip].id === ship.id}
                     disabled={currentTurn !== "player" || ship.destroyed}
                   />
                 ))}
