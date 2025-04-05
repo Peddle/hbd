@@ -11,7 +11,7 @@ interface GameState {
   targetShip: ShipIndex | null;
   combatLogs: LogEntry[];
   currentTurn: 'player' | 'enemy';
-  phase: 'move' | 'attack' | 'end';
+  phase: 'input' | 'animate' | 'end';
 }
 
 const initialState: GameState = {
@@ -34,7 +34,7 @@ const initialState: GameState = {
     },
   ],
   currentTurn: 'player',
-  phase: 'attack',
+  phase: 'input',
 };
 
 const applyDamage = (target: Ship, attacker: Ship, damage: number) => {
@@ -108,6 +108,14 @@ export const gameSlice = createSlice({
       };
       state.playerShips[shipIndex] = updatedShip;
     },
+    playAnimation: (state, action: PayloadAction<{animation}>) => {
+      state.phase = 'animate';
+      //maybe this also triggers animation stuff? i dunno
+      setInterval(() => {
+        state.phase = 'input';
+      }
+      , action.payload.animation.duration);
+    },
     addLogEntry: (state, action: PayloadAction<{message: string; type?: LogEntry['type']}>) => {
       const {message, type = 'info'} = action.payload;
       state.combatLogs = [
@@ -144,7 +152,7 @@ export const gameSlice = createSlice({
     },
     endPlayerTurn: (state) => {
       state.currentTurn = 'enemy';
-      state.phase = 'attack';
+      state.phase = 'input';
     },
     executeEnemyTurn: (state) => {
       const activeEnemies = state.enemyShips.filter((ship) => !ship.destroyed);
@@ -175,7 +183,7 @@ export const gameSlice = createSlice({
       });
 
       state.currentTurn = 'player';
-      state.phase = 'attack';
+      state.phase = 'input';
     },
     resetGame: () => initialState,
   },

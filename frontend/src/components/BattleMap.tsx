@@ -5,8 +5,8 @@ import {Ship} from "../pages/ShipCombat";
 import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
-const rotationCostMult = 1.5;
-const ROTATION_LOCK_DEGREES = 10; //speed per 90 degrees
+const rotationCostMult = 3;
+const ROTATION_LOCK_DEGREES = 5; //speed per 90 degrees
 
 
 const BattleMap = () => {
@@ -198,6 +198,10 @@ const BattleMap = () => {
     }
 
     if (selectedShip && selectedShip.speedRemaining != null) {
+      if (gridX < -Math.floor(gridWidth / 2) || gridX >= Math.ceil(gridWidth / 2) ||
+          gridY < -Math.floor(gridHeight / 2) || gridY >= Math.ceil(gridHeight / 2)) {
+        return;
+      }
       const dx = gridX - selectedShip.position.x;
       const dy = gridY - selectedShip.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -355,6 +359,10 @@ const BattleMap = () => {
         if (totalCost <= maxRange) {
           const gridX = shipX + x;
           const gridY = shipY + y;
+          if (gridX < -Math.floor(gridWidth / 2) || gridX >= Math.ceil(gridWidth / 2) ||
+              gridY < -Math.floor(gridHeight / 2) || gridY >= Math.ceil(gridHeight / 2)) {
+            continue;
+          }
           const px = ((gridX + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
           const py = ((gridY + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
 
