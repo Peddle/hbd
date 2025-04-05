@@ -5,6 +5,8 @@ import {Ship} from "../pages/ShipCombat";
 import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
+const rotationCostMult = 0;
+
 
 const BattleMap = () => {
   const dispatch = useDispatch();
@@ -33,6 +35,7 @@ const BattleMap = () => {
   const [lastMousePos, setLastMousePos] = useState({x: 0, y: 0});
   const [hoverTile, setHoverTile] = useState<[number, number] | null>(null);
   const [scale, setScale] = useState(0.3);
+  const scaledSquareSize = squareSize / scale;
 
   const mapCenterX = Math.floor(gridWidth / 2) * squareSize;
   const mapCenterY = Math.floor(gridHeight / 2) * squareSize;
@@ -42,10 +45,10 @@ const BattleMap = () => {
     if (containerRef.current) {
       const {clientWidth, clientHeight} = containerRef.current;
       setCanvasSize({width: clientWidth, height: clientHeight});
-      
+
       // Center the map initially - the key is to NOT apply scale to the width/height here
       // because we want offsetX/Y to be in world coordinates (before scaling)
-      setOffsetX(mapCenterX - (clientWidth / 2) * scale); 
+      setOffsetX(mapCenterX - (clientWidth / 2) * scale);
       setOffsetY(mapCenterY - (clientHeight / 2) * scale);
     }
   }, []);  // Empty dependency array means this only runs once on mount
@@ -56,13 +59,13 @@ const BattleMap = () => {
       if (containerRef.current) {
         const {clientWidth, clientHeight} = containerRef.current;
         setCanvasSize({width: clientWidth, height: clientHeight});
-        
+
         // Keep the center point when resizing
         setOffsetX(mapCenterX - (clientWidth / 2) * scale);
         setOffsetY(mapCenterY - (clientHeight / 2) * scale);
       }
     };
-    
+
     window.addEventListener("resize", resizeCanvas);
 
     // Prevent wheel event from propagating up to parent elements and prevent overscrolling
@@ -99,7 +102,9 @@ const BattleMap = () => {
   }, [mapCenterX, mapCenterY]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true);
+    if (e.button == 0) {
+      setIsDragging(true);
+    }
     setLastMousePos({x: e.clientX, y: e.clientY});
   };
 
@@ -142,8 +147,7 @@ const BattleMap = () => {
     if (!canvasRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * scale + offsetX;
-    const y = (e.clientY - rect.top) * scale + offsetY;
+    const {x, y} = getWorldCoords(e, rect, scale, offsetX, offsetY);
 
     const gridX = Math.floor(x / squareSize) - Math.floor(gridWidth / 2);
     const gridY = Math.floor(y / squareSize) - Math.floor(gridHeight / 2);
@@ -160,6 +164,7 @@ const BattleMap = () => {
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(false);
+    if (e.button !== 0) return; //left mouse handler
 
     if (!canvasRef.current) return;
 
@@ -191,12 +196,10 @@ const BattleMap = () => {
       const dy = gridY - selectedShip.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const angleRad = Math.atan2(dy, dx);
-      let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+      let angleDeg = getAngleDeg(dx, dy);
 
       const currentFacing = selectedShip.facing ?? 0;
-      let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
-      if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
+      let rotationDiff = getRotationDiff(currentFacing, angleDeg);
       const rotationCost = rotationDiff / 90;
 
       const totalCost = distance + rotationCost;
@@ -210,53 +213,107 @@ const BattleMap = () => {
     }
   };
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!canvasRef.current || !selectedShip) return;
+    handleShipRotation(e);
+  };
+
+  const handleShipRotation = (e: React.MouseEvent) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    if (selectedShip) {
+      const {x, y} = getWorldCoords(e, rect, scale, offsetX, offsetY);
+
+      const shipX = (selectedShip.position.x + Math.floor(gridWidth / 2)) * squareSize;
+      const shipY = (selectedShip.position.y + Math.floor(gridHeight / 2)) * squareSize;
+      const shipCenterX = shipX + squareSize / 2;
+      const shipCenterY = shipY + squareSize / 2;
+
+      const dx = x - shipCenterX;
+      const dy = y - shipCenterY;
+
+      const angleDeg = getAngleDeg(dx, dy);
+      const currentFacing = selectedShip.facing ?? 0;
+
+      let rotationDiff = (angleDeg - currentFacing + 360) % 360;
+      if (rotationDiff > 180) rotationDiff -= 360;
+
+      const rotationMagnitude = Math.abs(rotationDiff);
+      const maxRotation = Math.min(rotationMagnitude, selectedShip.speedRemaining * 90);
+      const newFacing = (currentFacing + Math.sign(rotationDiff) * maxRotation + 360) % 360;
+      const actualCost = (Math.abs(newFacing - currentFacing) % 360) / 90 * rotationCostMult;
+
+      dispatch(gameSlice.actions.rotateShip({ship: selectedShip, angle: newFacing, cost: actualCost}));
+    }
+  };
+
+  const getWorldCoords = (e: MouseEvent | React.MouseEvent, rect: DOMRect, scale: number, offsetX: number, offsetY: number) => {
+    const x = (e.clientX - rect.left) * scale + offsetX;
+    const y = (e.clientY - rect.top) * scale + offsetY;
+    return {x, y};
+  };
+
+  const getAngleDeg = (dx: number, dy: number) => {
+    return (Math.atan2(dy, dx) * (180 / Math.PI) + 360) % 360;
+  };
+
+  const getRotationDiff = (from: number, to: number) => {
+    let diff = Math.abs(to - from) % 360;
+    return diff > 180 ? 360 - diff : diff;
+  };
+
+  const getRotationCost = (from: number, to: number, costMultiplier: number = 1) => {
+    const diff = getRotationDiff(from, to);
+    return (diff / 90) * costMultiplier;
+  };
+
   const drawShipSprite = (ctx, x: number, y: number, size: number, color, facing = 0) => {
     const cx = x + size / 2;
     const cy = y + size / 2;
-  
+
     // Create a ship image if it doesn't exist
     const img = new Image();
     img.src = shipImage;
-  
+
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(((facing + 90) * Math.PI) / 180);
-  
+
     // Add colored underglow (blue for human, red for enemy)
     const baseGlowColor = color === "#0f0" ? "0, 100, 255" : "255, 30, 30";
-  
+
     // Create multiple layers of glow for a more blurred effect (30% smaller)
     for (let i = 4; i >= 0; i--) {
       const opacity = 0.3 - (i * 0.05);
       // Reduce radius by 30%
       const radius = (size / 2 + (i * size * 0.1)) * 0.7;
-      
+
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(${baseGlowColor}, ${opacity})`;
       ctx.fill();
     }
-    
+
     // Add an extra shadow blur (30% smaller)
     ctx.shadowColor = `rgba(${baseGlowColor}, 0.6)`;
     ctx.shadowBlur = size * 0.56; // 0.8 * 0.7
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
-  
+
     // Reset shadow for the ship image
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
-  
+
     // Draw the ship image
     // Center the image and scale appropriately
     const imageSize = size * 0.8; // Adjust size as needed
-    ctx.drawImage(img, -imageSize/2, -imageSize/2, imageSize, imageSize);
-  
+    ctx.drawImage(img, -imageSize / 2, -imageSize / 2, imageSize, imageSize);
+
     ctx.restore();
   };
 
-  const drawShips = (ctx, ships, color) => {
-    ships.forEach((ship) => {
+  const drawShips = (ctx, ships: Ship[], color) => {
+    ships.forEach((ship: Ship) => {
       const {x, y} = ship.position;
       const px = ((x + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
       const py = ((y + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
@@ -274,7 +331,6 @@ const BattleMap = () => {
 
     const min = Math.floor(-maxRange);
     const max = Math.ceil(maxRange);
-    const scaledSquareSize = squareSize / scale;
 
     for (let y = min; y <= max; y++) {
       for (let x = min; x <= max; x++) {
@@ -284,9 +340,7 @@ const BattleMap = () => {
         const angleRad = Math.atan2(y, x);
         let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
 
-        let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
-        if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
-        const rotationCost = rotationDiff / 90;
+        const rotationCost = getRotationCost(currentFacing, angleDeg, rotationCostMult);
 
         const totalCost = dist + rotationCost;
         if (totalCost <= maxRange) {
@@ -307,7 +361,6 @@ const BattleMap = () => {
     const [hx, hy] = hoverTile;
     const px = ((hx + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
     const py = ((hy + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
-    const scaledSquareSize = squareSize / scale;
 
     const isEnemy = enemyShips.some((ship) => ship.position.x === hx && ship.position.y === hy);
 
@@ -329,7 +382,7 @@ const BattleMap = () => {
     const currentFacing = selectedShip.facing ?? 0;
     let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
     if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
-    const rotationCost = rotationDiff / 90;
+    const rotationCost = rotationDiff / 90 * rotationCostMult;
 
     const totalCost = distance + rotationCost;
 
@@ -341,8 +394,45 @@ const BattleMap = () => {
   };
 
   const drawGrid = (ctx: CanvasRenderingContext2D) => {
+    const QUADRANT_LINE_LENGTH = 300 * scaledSquareSize;
+    const drawQuadrantLines = () => {
+      const drawLines = (ship: Ship, length: number, color: string) => {
+        const {x, y} = ship.position;
+        const centerX = ((x + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale + squareSize / (2 * scale);
+        const centerY = ((y + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale + squareSize / (2 * scale);
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(((ship.facing + 90) * Math.PI) / 180);
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1 / scale;
+
+        // Diagonal line from top-left to bottom-right
+        ctx.beginPath();
+        ctx.moveTo(-length, -length);
+        ctx.lineTo(length, length);
+        ctx.stroke();
+
+        // Diagonal line from top-right to bottom-left
+        ctx.beginPath();
+        ctx.moveTo(length, -length);
+        ctx.lineTo(-length, length);
+        ctx.stroke();
+
+        ctx.restore();
+      };
+
+      if (selectedShip) {
+        drawLines(selectedShip, QUADRANT_LINE_LENGTH, "rgba(43, 255, 0, 0.37)");
+      }
+
+      if (targetShip) {
+        drawLines(targetShip, 1 * scaledSquareSize, "rgba(255, 0, 0, 0.6)");
+      }
+    };
+
     ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
-    const scaledSquareSize = squareSize / scale;
 
     // Calculate visible grid cells based on scale
     const startCol = Math.floor((offsetX / scale) / scaledSquareSize);
@@ -380,6 +470,7 @@ const BattleMap = () => {
 
     drawMovementRange(ctx);
     drawHoverTile(ctx);
+    drawQuadrantLines();
     drawShips(ctx, playerShips, "#0f0");
     drawShips(ctx, enemyShips, "#f00");
   };
@@ -405,6 +496,7 @@ const BattleMap = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onContextMenu={(e) => handleRightClick(e)}
         onWheel={handleWheel}
       >
         <canvas
