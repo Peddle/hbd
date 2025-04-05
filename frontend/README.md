@@ -52,3 +52,44 @@ export default tseslint.config({
   },
 })
 ```
+
+## Deployment
+
+This frontend application is deployed on Fly.io using Docker. The deployment process is automated via GitHub Actions.
+
+### Local Docker Setup
+
+To build and run the application using Docker locally:
+
+```bash
+# Build the Docker image
+docker build -t hbd-frontend .
+
+# Run the container
+docker run -p 8080:80 hbd-frontend
+```
+
+Or use Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+### Fly.io Deployment
+
+The application is configured to be deployed to Fly.io. The deployment configuration is in `fly.toml`.
+
+For manual deployment:
+
+```bash
+# Deploy to Fly.io
+fly deploy
+```
+
+### CI/CD Pipeline
+
+The application is set up with a GitHub Actions workflow that automatically deploys to Fly.io when changes are pushed to the main branch.
+
+The workflow configuration can be found in `.github/workflows/deploy-frontend.yml` at the repository root.
+
+For the CI/CD pipeline to work, the `FLY_API_TOKEN` must be configured as a repository secret in GitHub.

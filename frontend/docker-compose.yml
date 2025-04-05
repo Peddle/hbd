@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    container_name: hbd-frontend
+    # Add additional configurations as needed
+    # environment:
+    #   - NODE_ENV=production
+    # Add volumes if needed
+    # volumes:
+    #   - ./some-local-path:/some-container-path
