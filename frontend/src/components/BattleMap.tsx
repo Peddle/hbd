@@ -5,7 +5,8 @@ import {Ship} from "../pages/ShipCombat";
 import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
-const rotationCostMult = 1.5; //speed per 90 degrees
+const rotationCostMult = 1.5;
+const ROTATION_LOCK_DEGREES = 10; //speed per 90 degrees
 
 
 const BattleMap = () => {
@@ -201,7 +202,7 @@ const BattleMap = () => {
       const dy = gridY - selectedShip.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      let angleDeg = getAngleDeg(dx, dy);
+      let angleDeg = Math.round(getAngleDeg(dx, dy) / ROTATION_LOCK_DEGREES) * ROTATION_LOCK_DEGREES ;
 
       const currentFacing = selectedShip.facing ?? 0;
       let rotationDiff = getRotationDiff(currentFacing, angleDeg);
@@ -235,7 +236,7 @@ const BattleMap = () => {
       const dx = x - shipCenterX;
       const dy = y - shipCenterY;
 
-      const angleDeg = getAngleDeg(dx, dy);
+      let angleDeg = getAngleDeg(dx, dy);
       const currentFacing = selectedShip.facing ?? 0;
 
       let rotationDiff = (angleDeg - currentFacing + 360) % 360;
@@ -261,7 +262,7 @@ const BattleMap = () => {
   };
 
   const getAngleDeg = (dx: number, dy: number) => {
-    return (Math.atan2(dy, dx) * (180 / Math.PI) + 360) % 360;
+    return (Math.round(Math.atan2(dy, dx) * (180 / Math.PI) / ROTATION_LOCK_DEGREES) * ROTATION_LOCK_DEGREES + 360) % 360;
   };
 
   const getRotationDiff = (from: number, to: number) => {
@@ -346,8 +347,7 @@ const BattleMap = () => {
         const dist = Math.sqrt(x * x + y * y);
         if (dist === 0 || dist > maxRange) continue;
 
-        const angleRad = Math.atan2(y, x);
-        let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+        let angleDeg = getAngleDeg(x, y)
 
         const rotationCost = getRotationCost(currentFacing, angleDeg, rotationCostMult);
 
