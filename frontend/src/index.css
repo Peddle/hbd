@@ -36,6 +36,7 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --font-syncopate: "Syncopate", sans-serif;
 }
 
 .dark {
@@ -114,7 +115,26 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html, body {
+    font-family: var(--font-syncopate);
+    letter-spacing: -0.02em;
+  }
+  
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Syncopate Font Classes for specific weight variants */
+.syncopate-regular {
+  font-family: var(--font-syncopate);
+  font-weight: 400;
+  font-style: normal;
+}
+
+.syncopate-bold {
+  font-family: var(--font-syncopate);
+  font-weight: 700;
+  font-style: normal;
 }

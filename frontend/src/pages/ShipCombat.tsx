@@ -424,7 +424,9 @@ const ShipCombat = () => {
     <div className="container mx-auto p-4 max-w-7xl">
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-2xl">Orbital Combat - Sirius System</CardTitle>
+          <CardTitle className="text-2xl">
+            Orbital Combat - Sirius System
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-center">

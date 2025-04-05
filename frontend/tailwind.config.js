@@ -4,6 +4,9 @@ export default {
   darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
+      fontFamily: {
+        syncopate: ['var(--font-syncopate)'],
+      },
       borderRadius: {
         "sm": "calc(var(--radius-sm))",
         "md": "calc(var(--radius-md))",

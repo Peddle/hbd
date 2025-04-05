@@ -4,7 +4,38 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    
+    <!-- Font preloading -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" as="style">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Inline font styles -->
+    <style>
+      /* Define Syncopate font directly in HTML */
+      .font-syncopate {
+        font-family: "Syncopate", sans-serif !important;
+      }
+      
+      @font-face {
+        font-family: 'Syncopate';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/syncopate/v19/pe0sMIuPIYBCpEV5eFdCBfe_.woff2) format('woff2');
+      }
+      
+      @font-face {
+        font-family: 'Syncopate';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/syncopate/v19/pe0pMIuPIYBCpEV5eFdKvtKqBP5v.woff2) format('woff2');
+      }
+    </style>
+    
+    <title>Galactic Conquest</title>
   </head>
   <body>
     <div id="root"></div>

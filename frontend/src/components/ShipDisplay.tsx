@@ -20,7 +20,9 @@ const ShipDisplay = ({ ship, onSelect, isActive }: ShipDisplayProps) => {
             </div>
             <div className="flex-1">
               <div className="flex justify-between items-center">
-                <h3 className="font-bold">{ship.name}</h3>
+                <h3 className="font-bold">
+                  {ship.name}
+                </h3>
                 <Badge variant="destructive">Destroyed</Badge>
               </div>
             </div>
@@ -44,7 +46,9 @@ const ShipDisplay = ({ ship, onSelect, isActive }: ShipDisplayProps) => {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold">{ship.name}</h3>
+              <h3 className="font-bold">
+                {ship.name}
+              </h3>
               <Badge>{ship.faction}</Badge>
             </div>
             <div className="mt-2 space-y-2">
