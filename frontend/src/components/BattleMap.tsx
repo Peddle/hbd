@@ -173,13 +173,13 @@ const BattleMap = () => {
       const dy = gridY - selectedShip.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      const angleRad = Math.atan2(dx, dy);
+      const angleRad = Math.atan2(dy, dx);
       let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
-      angleDeg = Math.round(angleDeg / 90) * 90;
 
       const currentFacing = selectedShip.facing ?? 0;
-      const rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
-      const rotationCost = (rotationDiff / 90) * 1;
+      let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
+      if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
+      const rotationCost = rotationDiff / 90;
 
       const totalCost = distance + rotationCost;
 
@@ -192,33 +192,64 @@ const BattleMap = () => {
     }
   };
 
-  const drawShips = (ctx: CanvasRenderingContext2D, ships: Ship[], color: string) => {
+  const drawShipSprite = (ctx, x: number, y: number, size: number, color, facing = 0) => {
+    const cx = x + size / 2;
+    const cy = y + size / 2;
+    const radius = size / 3;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((facing * Math.PI) / 180);
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -radius);
+    ctx.stroke();
+
+    ctx.restore();
+  };
+
+  const drawShips = (ctx, ships, color) => {
     ships.forEach((ship) => {
       const x = ((ship.position.x + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
       const y = ((ship.position.y + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
       const scaledSquareSize = squareSize / scale;
-      
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x + scaledSquareSize / 2, y + scaledSquareSize / 2, scaledSquareSize / 3, 0, Math.PI * 2);
-      ctx.fill();
+      drawShipSprite(ctx, x, y, scaledSquareSize, color, ship.facing);
     });
   };
 
   const drawMovementRange = (ctx: CanvasRenderingContext2D) => {
     if (!selectedShip || selectedShip.speedRemaining == null) return;
-    const radius = selectedShip.speedRemaining;
+    const maxRange = selectedShip.speedRemaining;
     const shipX = selectedShip.position.x;
     const shipY = selectedShip.position.y;
+    const currentFacing = selectedShip.facing ?? 0;
 
-    const min = Math.floor(-radius);
-    const max = Math.ceil(radius);
+    const min = Math.floor(-maxRange);
+    const max = Math.ceil(maxRange);
     const scaledSquareSize = squareSize / scale;
 
     for (let y = min; y <= max; y++) {
       for (let x = min; x <= max; x++) {
         const dist = Math.sqrt(x * x + y * y);
-        if (dist <= radius) {
+        if (dist === 0 || dist > maxRange) continue;
+
+        const angleRad = Math.atan2(y, x);
+        let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+
+        let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
+        if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
+        const rotationCost = rotationDiff / 90;
+
+        const totalCost = dist + rotationCost;
+        if (totalCost <= maxRange) {
           const gridX = shipX + x;
           const gridY = shipY + y;
           const px = ((gridX + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
@@ -232,17 +263,37 @@ const BattleMap = () => {
   };
 
   const drawHoverTile = (ctx: CanvasRenderingContext2D) => {
-    if (!selectedShip || selectedShip.speedRemaining == null || !hoverTile) return;
+    if (!hoverTile) return;
     const [hx, hy] = hoverTile;
+    const px = ((hx + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
+    const py = ((hy + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
+    const scaledSquareSize = squareSize / scale;
+
+    const isEnemy = enemyShips.some((ship) => ship.position.x === hx && ship.position.y === hy);
+
+    if (isEnemy) {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(px, py, squareSize, squareSize);
+      return;
+    }
+
+    if (!selectedShip || selectedShip.speedRemaining == null) return;
     const dx = hx - selectedShip.position.x;
     const dy = hy - selectedShip.position.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance <= selectedShip.speedRemaining) {
-      const px = ((hx + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
-      const py = ((hy + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
-      const scaledSquareSize = squareSize / scale;
-      
+    const angleRad = Math.atan2(dy, dx);
+    let angleDeg = (angleRad * (180 / Math.PI) + 360) % 360;
+
+    const currentFacing = selectedShip.facing ?? 0;
+    let rotationDiff = Math.abs(angleDeg - currentFacing) % 360;
+    if (rotationDiff > 180) rotationDiff = 360 - rotationDiff;
+    const rotationCost = rotationDiff / 90;
+
+    const totalCost = distance + rotationCost;
+
+    if (totalCost <= selectedShip.speedRemaining) {
       ctx.strokeStyle = "cyan";
       ctx.lineWidth = 2 / scale; // Adjust line width based on zoom level
       ctx.strokeRect(px, py, scaledSquareSize, scaledSquareSize);
