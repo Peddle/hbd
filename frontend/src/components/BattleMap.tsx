@@ -2,7 +2,7 @@ import {useRef, useState, useEffect} from "react";
 import {useSelector, useDispatch} from "react-redux";
 import {gameSlice} from "@/store/slices/gameSlice";
 import {Ship} from "../pages/ShipCombat";
-
+import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
 
@@ -25,26 +25,44 @@ const BattleMap = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({width: 0, height: 0});
+  // Initialize with null values that will be properly set once the container is measured
+  // These will be calculated properly after initialization
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({x: 0, y: 0});
   const [hoverTile, setHoverTile] = useState<[number, number] | null>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0.3);
 
   const mapCenterX = Math.floor(gridWidth / 2) * squareSize;
   const mapCenterY = Math.floor(gridHeight / 2) * squareSize;
 
+  // Initial centering effect that runs once on mount
+  useEffect(() => {
+    if (containerRef.current) {
+      const {clientWidth, clientHeight} = containerRef.current;
+      setCanvasSize({width: clientWidth, height: clientHeight});
+      
+      // Center the map initially - the key is to NOT apply scale to the width/height here
+      // because we want offsetX/Y to be in world coordinates (before scaling)
+      setOffsetX(mapCenterX - (clientWidth / 2) * scale); 
+      setOffsetY(mapCenterY - (clientHeight / 2) * scale);
+    }
+  }, []);  // Empty dependency array means this only runs once on mount
+
+  // Handle window resize separately
   useEffect(() => {
     const resizeCanvas = () => {
       if (containerRef.current) {
         const {clientWidth, clientHeight} = containerRef.current;
         setCanvasSize({width: clientWidth, height: clientHeight});
-        setOffsetX(mapCenterX - clientWidth / 2);
-        setOffsetY(mapCenterY - clientHeight / 2);
+        
+        // Keep the center point when resizing
+        setOffsetX(mapCenterX - (clientWidth / 2) * scale);
+        setOffsetY(mapCenterY - (clientHeight / 2) * scale);
       }
     };
-    resizeCanvas();
+    
     window.addEventListener("resize", resizeCanvas);
 
     // Prevent wheel event from propagating up to parent elements and prevent overscrolling
@@ -104,7 +122,7 @@ const BattleMap = () => {
 
     // Update scale factor (zoom level) - inverted scroll direction
     const zoomDelta = e.deltaY * 0.001; // Inverted (positive) for reversed zoom direction
-    const newScale = Math.max(0.4, Math.min(1.25, scale + zoomDelta)); // Limit minimum scale to 0.6 for reasonable zoom out
+    const newScale = Math.max(0.1, Math.min(1.25, scale + zoomDelta)); // Limit minimum scale to 0.6 for reasonable zoom out
 
     if (newScale !== scale) {
       // Calculate new offsets to keep the world center point fixed at the viewport center
@@ -134,9 +152,9 @@ const BattleMap = () => {
     if (isDragging) {
       const dx = e.clientX - lastMousePos.x;
       const dy = e.clientY - lastMousePos.y;
+      setOffsetX(prev => prev - dx * scale);
+      setOffsetY(prev => prev - dy * scale);
       setLastMousePos({x: e.clientX, y: e.clientY});
-      setOffsetX((prev) => prev - dx * scale);
-      setOffsetY((prev) => prev - dy * scale);
     }
   };
 
@@ -195,33 +213,55 @@ const BattleMap = () => {
   const drawShipSprite = (ctx, x: number, y: number, size: number, color, facing = 0) => {
     const cx = x + size / 2;
     const cy = y + size / 2;
-    const radius = size / 3;
-
+  
+    // Create a ship image if it doesn't exist
+    const img = new Image();
+    img.src = shipImage;
+  
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(((facing + 90) * Math.PI) / 180);
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, -radius);
-    ctx.stroke();
-
+  
+    // Add colored underglow (blue for human, red for enemy)
+    const baseGlowColor = color === "#0f0" ? "0, 100, 255" : "255, 30, 30";
+  
+    // Create multiple layers of glow for a more blurred effect (30% smaller)
+    for (let i = 4; i >= 0; i--) {
+      const opacity = 0.3 - (i * 0.05);
+      // Reduce radius by 30%
+      const radius = (size / 2 + (i * size * 0.1)) * 0.7;
+      
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${baseGlowColor}, ${opacity})`;
+      ctx.fill();
+    }
+    
+    // Add an extra shadow blur (30% smaller)
+    ctx.shadowColor = `rgba(${baseGlowColor}, 0.6)`;
+    ctx.shadowBlur = size * 0.56; // 0.8 * 0.7
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  
+    // Reset shadow for the ship image
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+  
+    // Draw the ship image
+    // Center the image and scale appropriately
+    const imageSize = size * 0.8; // Adjust size as needed
+    ctx.drawImage(img, -imageSize/2, -imageSize/2, imageSize, imageSize);
+  
     ctx.restore();
   };
 
   const drawShips = (ctx, ships, color) => {
     ships.forEach((ship) => {
-      const x = ((ship.position.x + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
-      const y = ((ship.position.y + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
-      const scaledSquareSize = squareSize / scale;
-      drawShipSprite(ctx, x, y, scaledSquareSize, color, ship.facing);
+      const {x, y} = ship.position;
+      const px = ((x + Math.floor(gridWidth / 2)) * squareSize - offsetX) / scale;
+      const py = ((y + Math.floor(gridHeight / 2)) * squareSize - offsetY) / scale;
+      // Pass blue for player ships, red for enemy ships
+      drawShipSprite(ctx, px, py, squareSize / scale, color, ship.facing);
     });
   };
 
@@ -320,10 +360,10 @@ const BattleMap = () => {
 
         if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
           ctx.fillStyle = "#0f172b55";
-          ctx.strokeStyle = "#FFF2";
+          ctx.strokeStyle = "#2e294e";
         } else {
           ctx.fillStyle = "#0005";
-          ctx.strokeStyle = "#FFF2";
+          ctx.strokeStyle = "#2e294e";
         }
 
         ctx.fillRect(px, py, scaledSquareSize, scaledSquareSize);
@@ -354,7 +394,7 @@ const BattleMap = () => {
         drawGrid(ctx);
       }
     }
-  }, [offsetX, offsetY, canvasSize, playerShips, enemyShips, selectedShip, hoverTile]);
+  }, [offsetX, offsetY, canvasSize, playerShips, enemyShips, selectedShip, hoverTile, scale]);
 
   return (
     <div>
