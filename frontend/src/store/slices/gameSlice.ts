@@ -1,5 +1,6 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Ship, Weapon, LogEntry, mockPlayerShips, mockEnemyShips} from '../../pages/ShipCombat';
+import {getArc} from '../../utils/ships';
 
 export type ShipIndex = number
 
@@ -48,11 +49,7 @@ const applyDamage = (target: Ship, attacker: Ship, damage: number) => {
     const angleDeg = (angleToTarget * 180) / Math.PI;
     const relativeAngle = (angleDeg - target.facing + 360) % 360;
 
-    let arc: keyof typeof newShields = 'front';
-    if (relativeAngle >= 315 || relativeAngle < 45) arc = 'front';
-    else if (relativeAngle >= 45 && relativeAngle < 135) arc = 'right';
-    else if (relativeAngle >= 135 && relativeAngle < 225) arc = 'back';
-    else if (relativeAngle >= 225 && relativeAngle < 315) arc = 'left';
+    const arc = getArc(relativeAngle);
 
     if (newShields[arc] > 0) {
       if (remainingDamage > newShields[arc]) {

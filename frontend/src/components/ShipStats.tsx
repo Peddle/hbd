@@ -33,6 +33,8 @@ const ShipStats = ({ ship, onFireWeapon, disabled = false }: ShipStatsProps) => 
         <div className="flex justify-between">
           <span className="text-muted-foreground">Position:</span>
           <span className="font-medium">{ship.position.x},{ship.position.y}</span>
+          <span className="text-muted-foreground">Move:</span>
+          <span className="font-medium">{ship.speedRemaining.toFixed(3)}/{ship.speed}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Status:</span>

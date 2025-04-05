@@ -5,7 +5,7 @@ import {Ship} from "../pages/ShipCombat";
 import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
-const rotationCostMult = 1.5;
+const rotationCostMult = 1.5; //speed per 90 degrees
 
 
 const BattleMap = () => {
@@ -216,7 +216,6 @@ const BattleMap = () => {
     }
   };
 
-
   const handleRightClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!canvasRef.current || !selectedShip) return;
@@ -244,10 +243,13 @@ const BattleMap = () => {
 
       const rotationMagnitude = Math.abs(rotationDiff);
       const maxPossibleRotation = selectedShip.speedRemaining * 90 / rotationCostMult;
-      const maxRotation = Math.min(rotationMagnitude, maxPossibleRotation);
-      const newFacing = (currentFacing + Math.sign(rotationDiff) * maxRotation + 360) % 360;
-      const actualCost = (Math.abs(newFacing - currentFacing) % 360) / 90 * rotationCostMult;
-
+      const clampedRotation = Math.max(Math.min(rotationMagnitude, maxPossibleRotation), 0);
+      const newFacing = (currentFacing + Math.sign(rotationDiff) * clampedRotation + 360) % 360;
+      const actualCost = clampedRotation / 90 * rotationCostMult;
+      
+      if (actualCost > selectedShip.speedRemaining) {
+        console.warn("Rotation cost exceeds remaining speed", actualCost);
+      }
       dispatch(gameSlice.actions.rotateShip({ship: selectedShip, angle: newFacing, cost: actualCost}));
     }
   };
@@ -271,6 +273,8 @@ const BattleMap = () => {
     const diff = getRotationDiff(from, to);
     return (diff / 90) * costMultiplier;
   };
+
+  
 
   const drawShipSprite = (ctx, x: number, y: number, size: number, color, facing = 0) => {
     const cx = x + size / 2;
