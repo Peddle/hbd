@@ -120,6 +120,8 @@
     font-family: var(--font-syncopate);
     letter-spacing: -0.02em;
     min-height: 100vh;
+    /* Disable overscrolling behavior */
+    overscroll-behavior: none;
   }
   
   body {

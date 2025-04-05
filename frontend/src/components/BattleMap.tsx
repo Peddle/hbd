@@ -47,21 +47,36 @@ const BattleMap = () => {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
     
-    // Prevent wheel event from propagating up to parent elements
+    // Prevent wheel event from propagating up to parent elements and prevent overscrolling
     const preventDefault = (e: WheelEvent) => {
+      // Prevent overscrolling and bouncing effects globally
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+    
+    // Prevent touchmove events that could cause overscrolling
+    const preventTouchMove = (e: TouchEvent) => {
       if (containerRef.current && containerRef.current.contains(e.target as Node)) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+        // Only prevent default if we're already at the edge of scrolling
+        const el = e.target as HTMLElement;
+        const isAtTop = el.scrollTop <= 0;
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight;
+        
+        if (isAtTop || isAtBottom) {
+          e.preventDefault();
+        }
       }
     };
     
     // Add passive: false to ensure preventDefault works
     document.addEventListener('wheel', preventDefault, { passive: false });
+    document.addEventListener('touchmove', preventTouchMove, { passive: false });
     
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       document.removeEventListener('wheel', preventDefault);
+      document.removeEventListener('touchmove', preventTouchMove);
     };
   }, [mapCenterX, mapCenterY]);
 
@@ -78,23 +93,23 @@ const BattleMap = () => {
     // Make sure canvas reference exists
     if (!canvasRef.current) return;
     
-    // Get mouse position relative to canvas
+    // Get center of the viewport/canvas
     const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const viewportCenterX = rect.width / 2;
+    const viewportCenterY = rect.height / 2;
     
-    // Calculate world coordinates before zoom
-    const worldX = mouseX + offsetX;
-    const worldY = mouseY + offsetY;
+    // Calculate world coordinates of the center point
+    const worldCenterX = viewportCenterX * scale + offsetX;
+    const worldCenterY = viewportCenterY * scale + offsetY;
     
-    // Update scale factor (zoom level)
-    const zoomDelta = -e.deltaY * 0.001; // Adjust sensitivity here
-    const newScale = Math.max(0.25, Math.min(5, scale + zoomDelta));
+    // Update scale factor (zoom level) - inverted scroll direction
+    const zoomDelta = e.deltaY * 0.001; // Inverted (positive) for reversed zoom direction
+    const newScale = Math.max(0.4, Math.min(1.25, scale + zoomDelta)); // Limit minimum scale to 0.6 for reasonable zoom out
     
-    // Calculate new offsets to keep the point under the mouse fixed
     if (newScale !== scale) {
-      const newOffsetX = worldX - mouseX * (newScale / scale);
-      const newOffsetY = worldY - mouseY * (newScale / scale);
+      // Calculate new offsets to keep the world center point fixed at the viewport center
+      const newOffsetX = worldCenterX - viewportCenterX * newScale;
+      const newOffsetY = worldCenterY - viewportCenterY * newScale;
       
       setScale(newScale);
       setOffsetX(newOffsetX);
