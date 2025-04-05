@@ -25,7 +25,10 @@ const ShipStats = ({ ship, onFireWeapon, disabled = false }: ShipStatsProps) => 
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Shields:</span>
-          <span className="font-medium">{ship.shields}/{ship.maxShields}</span>
+          <span className="font-medium">F {ship.shields.front}/{ship.maxShields}</span>
+          <span className="font-medium">L {ship.shields.left}/{ship.maxShields}</span>
+          <span className="font-medium">R {ship.shields.right}/{ship.maxShields}</span>
+          <span className="font-medium">B {ship.shields.back}/{ship.maxShields}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Position:</span>

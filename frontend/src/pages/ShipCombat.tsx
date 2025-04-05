@@ -20,7 +20,12 @@ export type Ship = {
   name: string;
   hull: number;
   maxHull: number;
-  shields: number;
+  shields: {
+    front: number;
+    left: number;
+    right: number;
+    back: number;
+  };
   maxShields: number;
   weapons: Weapon[];
   image: string;
@@ -51,7 +56,12 @@ export const mockPlayerShips: Ship[] = [
     name: "Avenger",
     hull: 100,
     maxHull: 100,
-    shields: 75,
+    shields: {
+      front: 75,
+      left: 75,
+      right: 75,
+      back: 75,
+    },
     maxShields: 75,
     weapons: [
       {
@@ -90,7 +100,12 @@ export const mockPlayerShips: Ship[] = [
     name: "Guardian",
     hull: 150,
     maxHull: 150,
-    shields: 100,
+    shields: {
+      front: 100,
+      left: 100,
+      right: 100,
+      back: 100,
+    },
     maxShields: 100,
     weapons: [
       {
@@ -132,7 +147,12 @@ export const mockEnemyShips: Ship[] = [
     name: "Devastator",
     hull: 120,
     maxHull: 120,
-    shields: 80,
+    shields: {
+      front: 80,
+      left: 0,
+      right: 80,
+      back: 80,
+    },
     maxShields: 80,
     weapons: [
       {
@@ -161,7 +181,12 @@ export const mockEnemyShips: Ship[] = [
     name: "Annihilator",
     hull: 180,
     maxHull: 180,
-    shields: 120,
+    shields: {
+      front: 100,
+      left: 100,
+      right: 100,
+      back: 100,
+    },
     maxShields: 120,
     weapons: [
       {
@@ -215,8 +240,7 @@ const ShipCombat = () => {
   };
 
   const handleAttack = (weaponId: string) => {
-    if (!selectedShip || !targetShip) return;
-
+    if (selectedShip == null || targetShip == null) return;
     const weapon = playerShips[selectedShip].weapons.find((w) => w.id === weaponId);
     if (!weapon) return;
 
@@ -224,14 +248,14 @@ const ShipCombat = () => {
     
     // Add log entries
     dispatch(addLogEntry({ 
-      message: `${playerShips[selectedShip].name} fires ${weapon.name} at ${targetShip.name} for ${weapon.damage} damage!` 
+      message: `${playerShips[selectedShip].name} fires ${weapon.name} at ${enemyShips[targetShip].name} for ${weapon.damage} damage!` 
     }));
 
-    if (enemyShips[targetShip].shields > 0) {
-      dispatch(addLogEntry({ 
-        message: `${enemyShips[targetShip].name}'s shields absorb part of the damage.` 
-      }));
-    }
+    // if (enemyShips[targetShip].shields > 0) {
+    //   dispatch(addLogEntry({ 
+    //     message: `${enemyShips[targetShip].name}'s shields absorb part of the damage.` 
+    //   }));
+    // }
 
     const updatedTarget = enemyShips[targetShip];
     if (updatedTarget?.destroyed) {

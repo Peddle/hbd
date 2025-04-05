@@ -5,7 +5,7 @@ import {Ship} from "../pages/ShipCombat";
 import shipImage from "../assets/ship1.png";
 
 const DEBUG = false;
-const rotationCostMult = 0;
+const rotationCostMult = 1.5;
 
 
 const BattleMap = () => {
@@ -200,14 +200,12 @@ const BattleMap = () => {
 
       const currentFacing = selectedShip.facing ?? 0;
       let rotationDiff = getRotationDiff(currentFacing, angleDeg);
-      const rotationCost = rotationDiff / 90;
+      const rotationCost = rotationDiff / 90 * rotationCostMult;
 
       const totalCost = distance + rotationCost;
 
       if (totalCost <= selectedShip.speedRemaining) {
-        if (rotationCost > 0) {
-          dispatch(rotateShip({ship: selectedShip, angle: angleDeg, cost: rotationCost}));
-        }
+        dispatch(rotateShip({ship: selectedShip, angle: angleDeg, cost: rotationCost}));
         dispatch(moveShip({ship: selectedShip, newPos: [gridX, gridY], cost: distance}));
       }
     }
@@ -239,7 +237,8 @@ const BattleMap = () => {
       if (rotationDiff > 180) rotationDiff -= 360;
 
       const rotationMagnitude = Math.abs(rotationDiff);
-      const maxRotation = Math.min(rotationMagnitude, selectedShip.speedRemaining * 90);
+      const maxPossibleRotation = selectedShip.speedRemaining * 90 / rotationCostMult;
+      const maxRotation = Math.min(rotationMagnitude, maxPossibleRotation);
       const newFacing = (currentFacing + Math.sign(rotationDiff) * maxRotation + 360) % 360;
       const actualCost = (Math.abs(newFacing - currentFacing) % 360) / 90 * rotationCostMult;
 
