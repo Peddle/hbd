@@ -10,7 +10,7 @@ interface AudioState {
 const initialState: AudioState = {
   musicEnabled: true,
   soundEffectsEnabled: true,
-  musicVolume: 0.5,
+  musicVolume: 0.25, // Reduced from 0.5 to make 50% quieter
   soundEffectsVolume: 0.7,
 };
 

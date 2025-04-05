@@ -1,4 +1,4 @@
-import { Button } from "../components/ui/button";
+import { SoundButton } from "../components/ui/sound-button";
 import { useAppDispatch } from "../store/hooks";
 import { navigateTo } from "../store/slices/menuSlice";
 
@@ -11,37 +11,37 @@ const StartMenu = () => {
         <h1 className="text-6xl font-bold mb-12 text-white">GALACTIC CONQUEST</h1>
         
         <div className="flex flex-col space-y-4 w-64">
-          <Button 
+          <SoundButton 
             className="py-6 text-xl" 
             onClick={() => dispatch(navigateTo('battle'))}
           >
             START GAME
-          </Button>
+          </SoundButton>
           
-          <Button 
+          <SoundButton 
             className="py-6 text-xl"
             variant="outline"
             onClick={() => alert('Options not implemented yet')}
           >
             OPTIONS
-          </Button>
+          </SoundButton>
           
-          <Button 
+          <SoundButton 
             className="py-6 text-xl"
             variant="outline"
             onClick={() => alert('Load game not implemented yet')}
           >
             LOAD GAME
-          </Button>
+          </SoundButton>
         </div>
         
-        <Button 
+        <SoundButton 
           className="mt-6 text-lg"
           variant="link" 
           onClick={() => dispatch(navigateTo('shipbuilding'))}
         >
           SHIP BUILDING
-        </Button>
+        </SoundButton>
         
         <p className="mt-10 text-gray-400">Game Version 0.1.0 Alpha</p>
       </div>

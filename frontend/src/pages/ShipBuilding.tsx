@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAppDispatch } from "../store/hooks";
 import { navigateTo } from "../store/slices/menuSlice";
-import { Button } from "../components/ui/button";
+import { SoundButton } from "../components/ui/sound-button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Checkbox } from "../components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -193,13 +193,13 @@ const ShipBuilding = () => {
           
           {/* Action Buttons */}
           <div className="flex justify-center space-x-4 mt-6">
-            <Button 
+            <SoundButton 
               className="bg-primary/80 hover:bg-primary"
               onClick={() => alert("Ship design saved!")}
             >
               DESIGN
-            </Button>
-            <Button 
+            </SoundButton>
+            <SoundButton 
               variant="outline"
               className="border-primary/50 text-white hover:bg-primary/20"
               onClick={() => {
@@ -211,8 +211,8 @@ const ShipBuilding = () => {
               }}
             >
               CLEAR
-            </Button>
-            <Button 
+            </SoundButton>
+            <SoundButton 
               variant="default"
               className="bg-primary/80 hover:bg-primary"
               onClick={() => {
@@ -221,13 +221,13 @@ const ShipBuilding = () => {
               }}
             >
               SAVE
-            </Button>
-            <Button 
+            </SoundButton>
+            <SoundButton 
               variant="destructive" 
               onClick={() => dispatch(navigateTo('start'))}
             >
               CANCEL
-            </Button>
+            </SoundButton>
           </div>
         </CardContent>
       </Card>
