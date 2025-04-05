@@ -31,7 +31,7 @@ const CombatLog = ({ entries }: CombatLogProps) => {
   };
 
   return (
-    <ScrollArea className="h-64 w-full pr-4">
+    <ScrollArea className="h-full w-full pr-4">
       <div className="space-y-2">
         {entries.map((entry) => (
           <div key={entry.id} className="text-sm border-l-2 pl-2 py-1" style={{ borderColor: getLogTypeClass(entry.type).replace('text', 'border') }}>

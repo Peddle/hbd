@@ -2,7 +2,6 @@ import { useAppSelector } from "./store/hooks";
 import StartMenu from "./pages/StartMenu";
 import ShipCombat from "./pages/ShipCombat";
 import ShipBuilding from "./pages/ShipBuilding";
-import ReduxTest from "./components/ReduxTest";
 import GameBackground from "./components/GameBackground";
 import BackgroundMusic from "./components/BackgroundMusic";
 
@@ -11,18 +10,10 @@ function App() {
   
   return (
     <GameBackground>
-      <header className="py-4 px-6 bg-card/70 backdrop-blur-sm border-b border-border">
-        <h1 className="text-2xl font-bold">
-          Galactic Conquest
-        </h1>
-      </header>
-      <main>
+      <main className="h-screen box-border">
         {activeMenu === 'start' && <StartMenu />}
         {activeMenu === 'battle' && (
           <>
-            <div className="container mx-auto py-4">
-              <ReduxTest />
-            </div>
             <ShipCombat />
           </>
         )}

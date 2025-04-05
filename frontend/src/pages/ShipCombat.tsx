@@ -1,5 +1,4 @@
 import ShipDisplay from "../components/ShipDisplay";
-import WeaponPanel from "../components/WeaponPanel";
 import CombatLog from "../components/CombatLog";
 import TargetSelection from "../components/TargetSelection";
 import BattleMap from "../components/BattleMap";
@@ -15,7 +14,6 @@ import {
   endPlayerTurn, 
   executeEnemyTurn 
 } from "../store/slices/gameSlice";
-
 
 export type Ship = {
   id: string;
@@ -282,124 +280,49 @@ const ShipCombat = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            Orbital Combat - Sirius System
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="font-semibold">Turn: </span>
-              <span className={`uppercase ${currentTurn === "player" ? "text-blue-500" : "text-red-500"}`}>
-                {currentTurn}
-              </span>
-              <span className="ml-4 font-semibold">Phase: </span>
-              <span className="uppercase">{phase}</span>
-            </div>
+    <div className="absolute inset-3 flex flex-col overflow-hidden">
+      {/* Battle Map */}
+      <div className="flex-grow border border-muted rounded-md overflow-hidden mb-3" style={{ maxHeight: "65%" }}>
+        <BattleMap />
+      </div>
+
+      {/* Two Panel Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3" style={{ height: "33%" }}>
+        {/* Selected Ship with Weapons */}
+        <Card className="flex flex-col overflow-hidden">
+          <CardHeader className="p-2">
+            <CardTitle className="text-sm">Selected Ship</CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 overflow-auto flex-grow">
+            {selectedShip !== null ? (
+              <ShipStats 
+                ship={playerShips[selectedShip]} 
+                onFireWeapon={playerShips[selectedShip].faction === "Human" ? handleAttack : undefined}
+                disabled={currentTurn !== "player" || targetShip === null}
+              />
+            ) : (
+              <p className="text-muted-foreground text-xs">Select a ship from the battle map</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Combat Log */}
+        <Card className="flex flex-col overflow-hidden">
+          <CardHeader className="p-2 flex justify-between items-center">
+            <CardTitle className="text-sm">Combat Log</CardTitle>
             <Button 
               variant="destructive" 
+              size="sm"
               onClick={handleEndTurn}
               disabled={currentTurn !== "player"}
             >
               End Turn
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Player Ships */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Fleet</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {playerShips.map((ship) => (
-                  <ShipDisplay 
-                    key={ship.id} 
-                    ship={ship} 
-                    onSelect={() => handleShipSelect(ship)}
-                    isActive={playerShips[selectedShip]?.id === ship.id}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {selectedShip && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ship Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ShipStats ship={playerShips[selectedShip]} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Middle Column - Battle Map and Combat Controls */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Battle Map</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BattleMap />
-            </CardContent>
-          </Card>
-
-          {selectedShip && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Weapons Control</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <WeaponPanel 
-                  weapons={playerShips[selectedShip].weapons} 
-                  onFireWeapon={handleAttack}
-                  disabled={currentTurn !== "player" || !targetShip}
-                />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right Column - Enemy Ships and Combat Log */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Enemy Fleet</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {enemyShips.map((ship) => (
-                  <TargetSelection
-                    key={ship.id}
-                    ship={ship}
-                    onSelect={() => handleTargetSelect(ship)}
-                    isSelected={targetShip && enemyShips[targetShip].id === ship.id}
-                    disabled={currentTurn !== "player" || ship.destroyed}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="h-96">
-            <CardHeader>
-              <CardTitle>Combat Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CombatLog entries={combatLogs} />
-            </CardContent>
-          </Card>
-        </div>
+          </CardHeader>
+          <CardContent className="p-2 overflow-auto flex-grow">
+            <CombatLog entries={combatLogs} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -210,10 +210,10 @@ const BattleMap = () => {
   }, [offsetX, offsetY, canvasSize, playerShips, enemyShips, selectedShip, hoverTile]);
 
   return (
-    <div>
+    <div className="h-full">
       <div
         ref={containerRef}
-        style={{width: "100%", height: "500px"}}
+        className="h-full w-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
