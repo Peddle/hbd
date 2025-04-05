@@ -46,7 +46,7 @@ const BattleMap = () => {
     };
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
-    
+
     // Prevent wheel event from propagating up to parent elements and prevent overscrolling
     const preventDefault = (e: WheelEvent) => {
       // Prevent overscrolling and bouncing effects globally
@@ -54,7 +54,7 @@ const BattleMap = () => {
       e.stopPropagation();
       return false;
     };
-    
+
     // Prevent touchmove events that could cause overscrolling
     const preventTouchMove = (e: TouchEvent) => {
       if (containerRef.current && containerRef.current.contains(e.target as Node)) {
@@ -62,17 +62,17 @@ const BattleMap = () => {
         const el = e.target as HTMLElement;
         const isAtTop = el.scrollTop <= 0;
         const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight;
-        
+
         if (isAtTop || isAtBottom) {
           e.preventDefault();
         }
       }
     };
-    
+
     // Add passive: false to ensure preventDefault works
-    document.addEventListener('wheel', preventDefault, { passive: false });
-    document.addEventListener('touchmove', preventTouchMove, { passive: false });
-    
+    document.addEventListener('wheel', preventDefault, {passive: false});
+    document.addEventListener('touchmove', preventTouchMove, {passive: false});
+
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       document.removeEventListener('wheel', preventDefault);
@@ -89,40 +89,40 @@ const BattleMap = () => {
     // Prevent the default scroll behavior
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Make sure canvas reference exists
     if (!canvasRef.current) return;
-    
+
     // Get center of the viewport/canvas
     const rect = canvasRef.current.getBoundingClientRect();
     const viewportCenterX = rect.width / 2;
     const viewportCenterY = rect.height / 2;
-    
+
     // Calculate world coordinates of the center point
     const worldCenterX = viewportCenterX * scale + offsetX;
     const worldCenterY = viewportCenterY * scale + offsetY;
-    
+
     // Update scale factor (zoom level) - inverted scroll direction
     const zoomDelta = e.deltaY * 0.001; // Inverted (positive) for reversed zoom direction
     const newScale = Math.max(0.4, Math.min(1.25, scale + zoomDelta)); // Limit minimum scale to 0.6 for reasonable zoom out
-    
+
     if (newScale !== scale) {
       // Calculate new offsets to keep the world center point fixed at the viewport center
       const newOffsetX = worldCenterX - viewportCenterX * newScale;
       const newOffsetY = worldCenterY - viewportCenterY * newScale;
-      
+
       setScale(newScale);
       setOffsetX(newOffsetX);
       setOffsetY(newOffsetY);
     }
-    
+
     // Return false to ensure the event doesn't bubble up
     return false;
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) * scale + offsetX;
     const y = (e.clientY - rect.top) * scale + offsetY;
@@ -144,7 +144,7 @@ const BattleMap = () => {
     setIsDragging(false);
 
     if (!canvasRef.current) return;
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) * scale + offsetX;
     const y = (e.clientY - rect.top) * scale + offsetY;
@@ -199,7 +199,7 @@ const BattleMap = () => {
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate((facing * Math.PI) / 180);
+    ctx.rotate(((facing + 90) * Math.PI) / 180);
 
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -303,7 +303,7 @@ const BattleMap = () => {
   const drawGrid = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
     const scaledSquareSize = squareSize / scale;
-    
+
     // Calculate visible grid cells based on scale
     const startCol = Math.floor((offsetX / scale) / scaledSquareSize);
     const startRow = Math.floor((offsetY / scale) / scaledSquareSize);
